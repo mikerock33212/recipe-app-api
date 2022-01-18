@@ -6,7 +6,7 @@ from core.models import Tag
 from . import serializers
 
 # Create your views here.
-class TagViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
+class TagViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin):
     """manage tags in the db"""
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
@@ -16,4 +16,8 @@ class TagViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
     def get_queryset(self):
         """return object for the current authenticated user only"""
         return self.queryset.filter(user=self.request.user).order_by('-name')
-        
+
+    def perform_create(self, serializer):
+        """create a new tag"""
+        serializer.save(user=self.request.user)
+    
