@@ -1,8 +1,14 @@
-import unittest
+from django.test import TestCase
 from django.contrib.auth import get_user_model
 
+from core import models
 
-class ModelTests(unittest.TestCase):
+
+def sample_user(email='mikerock@gmail.com', password='test123'):
+    """create a sample user"""
+    return get_user_model().objects.create_user(email,password)
+
+class ModelTests(TestCase):
 
     def test_create_user_with_email(self):
         """test creating a new user with an email is successful"""
@@ -31,7 +37,7 @@ class ModelTests(unittest.TestCase):
             get_user_model().objects.create_user(None, 'test123')
 
     # def test_create_new_super_user(self):
-    #    """test creating a new super user"""
+    #    """test creating a new superuser"""
     #    user = get_user_model().objects.create_superuser(
     #        'mikerock@gmail.com',
     #       'test123'
@@ -40,5 +46,9 @@ class ModelTests(unittest.TestCase):
     #    self.assertTrue(user.is_staff)
 
 
-if __name__ == '__main__':
-    unittest.main()
+    def test_tag_str(self):
+        """test the tag string representation"""
+        tag = models.Tag.objects.create(user=sample_user(),name='rock')
+
+        self.assertEqual(str(tag), tag.name)
+
