@@ -10,8 +10,9 @@ from recipe.serializers import RecipeSerializer, RecipeDetailSerializer
 
 RECIPE_URL = reverse('recipe:recipe-list')
 
-#/api/recipe/recipes
-#/api/recipe/recipes/1/
+# /api/recipe/recipes
+# /api/recipe/recipes/1/
+
 
 def detail_url(recipe_id):
     """return recipe detail URL"""
@@ -22,6 +23,7 @@ def sample_tag(user, name='Main course'):
     """create and return a sample tag"""
     return Tag.objects.create(user=user, name=name)
 
+
 def sample_ingredient(user, name='cinnamon'):
     """create and return a sample ingredient"""
     return Ingredient.objects.create(user=user, name=name)
@@ -30,13 +32,14 @@ def sample_ingredient(user, name='cinnamon'):
 def sample_recipe(user, **params):
     """create and return a sample recipe"""
     defaults = {
-        'title':'sample recipe',
-        'time_minutes':10,
-        'price':5.00
+        'title': 'sample recipe',
+        'time_minutes': 10,
+        'price': 5.00
     }
     defaults.update(params)
 
     return Recipe.objects.create(user=user, **defaults)
+
 
 class PublicRecipeApiTests(TestCase):
     """test unauthenticated recipe API access"""
@@ -62,7 +65,7 @@ class PrivateRecipeApiTests(TestCase):
         )
         self.client.force_authenticate(self.user)
 
-    def test_retrive_recipes(self):
+    def test_retrieve_recipes(self):
         """test retrieving a list of recipes"""
         sample_recipe(user=self.user)
         sample_recipe(user=self.user)
@@ -88,7 +91,7 @@ class PrivateRecipeApiTests(TestCase):
         recipes = Recipe.objects.filter(user=self.user)
         serializer = RecipeSerializer(recipes, many=True)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(res.data),1)
+        self.assertEqual(len(res.data), 1)
         self.assertEqual(res.data, serializer.data)
 
     def test_view_recipe_detail(self):
@@ -154,3 +157,40 @@ class PrivateRecipeApiTests(TestCase):
         self.assertEqual(ingredients.count(), 2)
         self.assertIn(ingredient1, ingredients)
         self.assertIn(ingredient2, ingredients)
+
+    def test_partial_update_recipe(self):
+        """test updating a recipe with patch"""
+        recipe = sample_recipe(user=self.user)
+        recipe.tags.add(sample_tag(user=self.user))
+        new_tag = sample_tag(user=self.user, name='curry')
+        payload = {
+            'title': 'chicken tikka',
+            'tags': [new_tag.id]
+        }
+        url = detail_url(recipe.id)
+        self.client.patch(url, payload)
+
+        recipe.refresh_from_db()
+        self.assertEqual(recipe.title, payload['title'])
+        tags = recipe.tags.all()
+        self.assertEqual(len(tags), 1)
+        self.assertIn(new_tag, tags)
+
+    def test_full_update_recipe(self):
+        """test updating a recipe with put"""
+        recipe = sample_recipe(user=self.user)
+        recipe.tags.add(sample_tag(user=self.user))
+        payload = {
+            'title': 'spaghetty carbonara',
+            'time_minutes': 5,
+            'price': 5.00
+        }
+        url = detail_url(recipe.id)
+        self.client.put(url, payload)
+
+        recipe.refresh_from_db()
+        self.assertEqual(recipe.title, payload['title'])
+        self.assertEqual(recipe.time_minutes, payload['time_minutes'])
+        self.assertEqual(recipe.price, payload['price'])
+        tags = recipe.tags.all()
+        self.assertEqual(len(tags), 0)
